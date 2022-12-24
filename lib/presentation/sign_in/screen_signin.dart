@@ -1,10 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:todo_app/presentation/widgets/signup_button.dart';
-import 'package:todo_app/presentation/widgets/signup_google_phone_button.dart';
-import 'package:todo_app/presentation/widgets/textitem.dart';
+import 'package:todo_app/presentation/home/screen_home.dart';
+import 'package:todo_app/presentation/sign_in/widgets/signup_google_phone_button.dart';
+import 'package:todo_app/presentation/sign_in/widgets/textitem.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'package:todo_app/presentation/sign_up/screen_signup.dart';
 
-class ScreenSignInPage extends StatelessWidget {
+class ScreenSignInPage extends StatefulWidget {
   const ScreenSignInPage({super.key});
+
+  @override
+  State<ScreenSignInPage> createState() => _ScreenSignInPageState();
+}
+
+class _ScreenSignInPageState extends State<ScreenSignInPage> {
+  firebase_auth.FirebaseAuth firebaseAuth = firebase_auth.FirebaseAuth.instance;
+  TextEditingController emailController = TextEditingController();
+  TextEditingController pwdController = TextEditingController();
+  bool circular = false;
 
   @override
   Widget build(BuildContext context) {
@@ -44,28 +56,33 @@ class ScreenSignInPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 15),
-              textItem(context, 'Email'),
+              textItem(context, 'Email', emailController, false),
               const SizedBox(height: 15),
-              textItem(context, 'Password'),
+              textItem(context, 'Password', pwdController, true),
               const SizedBox(height: 30),
-              colorButton(context, 'Sign In'),
+              colorButton('Sign In'),
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Text(
+                children: [
+                  const Text(
                     "if you don't have an account?  ",
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 12,
                     ),
                   ),
-                  Text(
-                    'Sign up',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
+                  InkWell(
+                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) => const ScreenSignUpPage(),
+                    )),
+                    child: const Text(
+                      'Sign up',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   )
                 ],
@@ -81,6 +98,63 @@ class ScreenSignInPage extends StatelessWidget {
               )
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget colorButton(String buttonName) {
+    return InkWell(
+      onTap: () async {
+        setState(() {
+          circular = true;
+        });
+        try {
+          firebase_auth.UserCredential userCredential =
+              await firebaseAuth.signInWithEmailAndPassword(
+                  email: emailController.text, password: pwdController.text);
+          // ignore: avoid_print
+          print(userCredential.user!.email);
+          setState(() {
+            circular = false;
+          });
+          // ignore: use_build_context_synchronously
+          Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (context) => const ScreenHome(),
+              ),
+              (route) => false);
+        } catch (e) {
+          final snackbar = SnackBar(content: Text(e.toString()));
+          ScaffoldMessenger.of(context).showSnackBar(snackbar);
+          setState(() {
+            circular = false;
+          });
+        }
+      },
+      child: Container(
+        width: MediaQuery.of(context).size.width - 90,
+        height: 60,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xfffd746c),
+              Color(0xffff9868),
+              Color(0xfffd746c),
+            ],
+          ),
+        ),
+        child: Center(
+          child: circular
+              ? const CircularProgressIndicator()
+              : Text(
+                  buttonName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                  ),
+                ),
         ),
       ),
     );
